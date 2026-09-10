@@ -1,3 +1,17 @@
+/** Format an ISO timestamp as e.g. "10 Sep 2026, 3:42 PM". */
+export function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 /** Format an ISO date (YYYY-MM-DD or full ISO) as a friendly, relative-ish label. */
 export function formatDueDate(value) {
   if (!value) return 'No due date';

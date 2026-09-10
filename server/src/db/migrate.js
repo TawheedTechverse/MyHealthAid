@@ -6,6 +6,7 @@ import { pool } from './pool.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DROP_SQL = `
+  DROP TABLE IF EXISTS visit_notes CASCADE;
   DROP TABLE IF EXISTS tasks CASCADE;
   DROP TABLE IF EXISTS treatment_plans CASCADE;
   DROP TABLE IF EXISTS users CASCADE;

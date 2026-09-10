@@ -37,3 +37,22 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_plan ON tasks(plan_id);
+
+CREATE TABLE IF NOT EXISTS visit_notes (
+  id             BIGSERIAL PRIMARY KEY,
+  doctor_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  patient_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan_id        BIGINT REFERENCES treatment_plans(id) ON DELETE SET NULL,
+  transcript     TEXT NOT NULL DEFAULT '',
+  summary        JSONB,
+  summary_status TEXT NOT NULL DEFAULT 'none'
+                 CHECK (summary_status IN ('none', 'pending', 'ready', 'error')),
+  summary_error  TEXT,
+  summary_model  TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_visit_notes_doctor  ON visit_notes(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_visit_notes_patient ON visit_notes(patient_id);
+CREATE INDEX IF NOT EXISTS idx_visit_notes_plan    ON visit_notes(plan_id);

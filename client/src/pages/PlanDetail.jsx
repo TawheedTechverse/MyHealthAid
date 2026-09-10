@@ -7,6 +7,7 @@ import Spinner from '../components/Spinner.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { formatDueDate } from '../lib/format.js';
+import VisitNotesPanel from '../components/VisitNotesPanel.jsx';
 
 export default function PlanDetail() {
   const { id } = useParams();
@@ -204,6 +205,13 @@ export default function PlanDetail() {
           </button>
         </form>
       )}
+
+      <h2 style={{ marginTop: 32 }}>Visit notes</h2>
+      <VisitNotesPanel
+        planId={plan.id}
+        patientId={plan.patient.id}
+        canRecord={isDoctor}
+      />
     </div>
   );
 }

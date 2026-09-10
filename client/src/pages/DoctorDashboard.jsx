@@ -3,14 +3,16 @@ import { useFetch } from '../hooks/useApi.js';
 import Spinner from '../components/Spinner.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import VisitNotesPanel from '../components/VisitNotesPanel.jsx';
 
 export default function DoctorDashboard() {
   const dash = useFetch('/dashboard');
   const plans = useFetch('/plans');
+  const patientList = useFetch('/users/patients');
 
-  if (dash.loading || plans.loading) return <Spinner full />;
+  if (dash.loading || plans.loading || patientList.loading) return <Spinner full />;
 
-  const error = dash.error || plans.error;
+  const error = dash.error || plans.error || patientList.error;
   if (error) return <div className="error-text">{error}</div>;
 
   const { summary, patients } = dash.data;
@@ -67,6 +69,13 @@ export default function DoctorDashboard() {
           ))}
         </div>
       )}
+
+      <h2 style={{ marginTop: 32 }}>Visit notes</h2>
+      <p className="page-sub" style={{ marginBottom: 16 }}>
+        Dictate during a consultation — the transcript is captured live and turned into a
+        structured summary you review, so you don&apos;t write it up from memory.
+      </p>
+      <VisitNotesPanel canRecord patientOptions={patientList.data.patients} />
 
       <h2 style={{ marginTop: 32 }}>All plans</h2>
       <div className="stack">
