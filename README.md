@@ -70,6 +70,37 @@ Password for all: `password123`
 | Patient | `chloe@myhealthaid.dev` |
 | Patient | `david@myhealthaid.dev` |
 
+## Deploy
+
+The client is a static SPA (host on Vercel); the server is a stateful Node
+process with Postgres (host on Render / Railway / Fly). They are deployed
+separately and connected with two environment variables.
+
+### Server — Render (blueprint included)
+
+[`render.yaml`](render.yaml) provisions the API plus a Postgres database:
+
+1. Render dashboard → **New → Blueprint** → pick this repo.
+2. When prompted, set `CLIENT_ORIGIN` to your Vercel URL
+   (e.g. `https://my-health-aid.vercel.app`) and, optionally, `ANTHROPIC_API_KEY`.
+   `DATABASE_URL` and `JWT_SECRET` are wired up automatically; the schema is
+   applied on every deploy (`npm run migrate`).
+3. Once live, open the service **Shell** and run `npm run seed` to load the demo
+   accounts.
+
+Any other host works too — set `DATABASE_URL`, `PG_SSL=true`, `JWT_SECRET`,
+`CLIENT_ORIGIN`, `NODE_ENV=production`; build with `npm install`, start with
+`npm run start`.
+
+### Client — Vercel
+
+- **Root Directory:** `client` ([`client/vercel.json`](client/vercel.json) sets
+  the Vite build and the SPA fallback rewrite).
+- **Environment variable:** `VITE_API_URL` = `https://<your-api-host>/api`
+  — without this the client calls `/api` on its own domain, where nothing is
+  listening, and every request 404s.
+- Redeploy after changing the variable (Vite inlines it at build time).
+
 ## Scripts
 
 | Command              | What it does                                  |

@@ -20,7 +20,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** Pull a human-readable message out of an axios error. */
+/**
+ * Pull a human-readable string out of an axios error.
+ *
+ * The value is always a string — callers render it directly as JSX, so we must
+ * never hand back an object. Some responses (our own validation errors, and
+ * platform-level 404s from Vercel which look like `{ error: { code, message } }`)
+ * put an object where we'd expect a string, which previously crashed React with
+ * "Objects are not valid as a React child" (minified error #31).
+ */
 export function errorMessage(err, fallback = 'Something went wrong') {
-  return err?.response?.data?.error || err?.message || fallback;
+  const data = err?.response?.data;
+  const candidate =
+    (typeof data === 'string' && data) ||
+    data?.error?.message ||
+    data?.error ||
+    data?.message ||
+    err?.message ||
+    fallback;
+  return typeof candidate === 'string' ? candidate : fallback;
 }
