@@ -4,7 +4,8 @@
 #   2. Render dashboard -> New -> Blueprint -> pick this repo.
 #   3. Fill in the two `sync: false` vars when prompted:
 #        CLIENT_ORIGIN   -> your Vercel URL, e.g. https://my-health-aid.vercel.app
-#        ANTHROPIC_API_KEY -> optional; leave blank to skip AI visit-note summaries
+#        GEMINI_API_KEY  -> optional; leave blank to skip AI visit-note summaries
+#                           (get one at https://aistudio.google.com/apikey)
 #   4. After the first deploy, load demo accounts from the service Shell:
 #        npm run seed
 #
@@ -36,5 +37,5 @@ services:
         generateValue: true
       - key: CLIENT_ORIGIN
         sync: false
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false

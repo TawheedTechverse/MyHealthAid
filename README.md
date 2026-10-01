@@ -10,7 +10,7 @@ browser, then the server turns the transcript into a structured clinical summary
 reviews and edits instead of writing from memory.
 
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme). Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
-- **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Anthropic API (`@anthropic-ai/sdk`, structured output).
+- **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
 
 ## Prerequisites
@@ -43,11 +43,12 @@ the Vite dev server proxies `/api` to `http://localhost:4000`).
 Without this, doctors can still record and save transcripts — only the automatic
 summary step is skipped (and can be run later per note).
 
-In `server/.env`:
+Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey), then in
+`server/.env`:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-SUMMARY_MODEL=claude-opus-5      # or claude-haiku-4-5 for a much cheaper call
+GEMINI_API_KEY=...
+SUMMARY_MODEL=gemini-flash-latest   # tracks Google's current fast model
 ```
 
 ## Run
@@ -82,7 +83,7 @@ separately and connected with two environment variables.
 
 1. Render dashboard → **New → Blueprint** → pick this repo.
 2. When prompted, set `CLIENT_ORIGIN` to your Vercel URL
-   (e.g. `https://my-health-aid.vercel.app`) and, optionally, `ANTHROPIC_API_KEY`.
+   (e.g. `https://my-health-aid.vercel.app`) and, optionally, `GEMINI_API_KEY`.
    `DATABASE_URL` and `JWT_SECRET` are wired up automatically; the schema is
    applied on every deploy (`npm run migrate`).
 3. Once live, open the service **Shell** and run `npm run seed` to load the demo

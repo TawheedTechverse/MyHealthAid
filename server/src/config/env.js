@@ -26,8 +26,11 @@ export const config = {
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   isProd: process.env.NODE_ENV === 'production',
 
-  // Visit-note summarization (optional). When ANTHROPIC_API_KEY is unset the
+  // Visit-note summarization (optional). When GEMINI_API_KEY is unset the
   // feature still records transcripts; only the AI summary step is skipped.
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
-  summaryModel: process.env.SUMMARY_MODEL ?? 'claude-opus-5',
+  // Trimmed because a key/model pasted into a host's env var UI (Render,
+  // Vercel, ...) commonly picks up a trailing newline or space, which makes
+  // the key "set" (so the feature turns on) but invalid (so every call 401s).
+  geminiApiKey: (process.env.GEMINI_API_KEY ?? '').trim(),
+  summaryModel: (process.env.SUMMARY_MODEL ?? 'gemini-flash-latest').trim(),
 };

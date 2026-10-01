@@ -87,6 +87,10 @@ async function runSummary(noteId) {
       [noteId, summary, model],
     );
   } catch (err) {
+    // Without this, a broken summarizer (bad key, wrong model id, network
+    // block) only ever shows up as "summary failed" in the UI — nothing
+    // lands in the server logs to say why.
+    console.error(`Visit note ${noteId} summarization failed:`, err);
     await query(
       `UPDATE visit_notes
           SET summary_status = 'error', summary_error = $2, updated_at = now()
@@ -152,7 +156,7 @@ router.post(
     await assertDoctorOwnsNote(req.params.id, req.user.id);
     if (!isSummarizerConfigured()) {
       throw ApiError.badRequest(
-        'Summarization is not configured on the server (ANTHROPIC_API_KEY is unset)',
+        'Summarization is not configured on the server (GEMINI_API_KEY is unset)',
       );
     }
     await runSummary(req.params.id);
