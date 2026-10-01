@@ -50,7 +50,7 @@ export default function AuthPage({ mode }) {
         <h1 className="page-title" style={{ textAlign: 'center' }}>
           MyHealthAid
         </h1>
-        <p className="page-sub" style={{ textAlign: 'center' }}>
+        <p className="page-sub auth-motto" style={{ textAlign: 'center' }}>
           Shared treatment tracking for patients &amp; doctors
         </p>
 
