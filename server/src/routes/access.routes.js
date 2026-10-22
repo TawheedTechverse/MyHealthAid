@@ -6,6 +6,7 @@ import { ApiError } from '../lib/ApiError.js';
 import { authenticate, requireRole } from '../middleware/authenticate.js';
 import { validate } from '../middleware/validate.js';
 import { createAccessRequest, verifyAccessCode, doctorAlreadyTreats, hasActiveGrant } from '../lib/access.js';
+import { recordAudit, listAuditForPatient } from '../lib/audit.js';
 
 const router = Router();
 
@@ -60,6 +61,13 @@ router.post(
   asyncHandler(async (req, res) => {
     const patient = await findPatientByIdentifier(req.body.patient);
     const grant = await verifyAccessCode(req.user, patient, req.body.code);
+    await recordAudit({
+      doctorId: req.user.id,
+      patientId: patient.id,
+      recordType: 'access_grant',
+      recordId: grant.id,
+      action: 'grant',
+    });
     res.json({
       grant: {
         id: grant.id,
@@ -105,13 +113,28 @@ router.post(
     const { rows } = await query(
       `UPDATE access_grants SET revoked_at = now()
         WHERE id = $1 AND patient_id = $2 AND revoked_at IS NULL
-        RETURNING id`,
+        RETURNING id, doctor_id`,
       [req.params.id, req.user.id],
     );
     if (rows.length === 0) {
       throw ApiError.notFound('Grant not found');
     }
+    await recordAudit({
+      doctorId: rows[0].doctor_id,
+      patientId: req.user.id,
+      recordType: 'access_grant',
+      recordId: rows[0].id,
+      action: 'revoke',
+    });
     res.status(204).end();
+  }),
+);
+
+router.get(
+  '/audit',
+  requireRole('patient'),
+  asyncHandler(async (req, res) => {
+    res.json({ entries: await listAuditForPatient(req.user.id) });
   }),
 );
 

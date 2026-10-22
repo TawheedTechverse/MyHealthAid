@@ -16,7 +16,10 @@ A doctor who doesn't already treat a patient can request **2FA-verified read
 access**: the patient gets a 6-digit code by SMS (or in the server log if
 Twilio isn't configured), and a correct code unlocks 30 days of read-only
 access to that patient's plans and visit notes. Patients see and can revoke
-every grant on their "Doctor access" page.
+every grant on their "Doctor access" page. Every doctor view of a patient's
+plan or visit note, and every grant/revoke, is recorded in an append-only
+audit log the patient can see on a "Who viewed my records" page — no route
+can edit or delete it.
 
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
@@ -148,7 +151,13 @@ access_requests(id, doctor_id -> users, patient_id -> users, code_hash,
 
 access_grants(id, doctor_id -> users, patient_id -> users,
               granted_at, expires_at, revoked_at)
+
+audit_log(id, doctor_id -> users, patient_id -> users,
+          record_type['plan'|'visit_note'|'access_grant'], record_id,
+          action['view'|'grant'|'revoke'], created_at)
 ```
+
+`audit_log` is append-only: there is no route to update or delete an entry.
 
 `users.medical_registration_number` is set by doctors in their profile (AHPRA-style:
 3 letters + 10 digits, e.g. `MED0001234567`) and is required before they can sign a
@@ -188,6 +197,7 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | POST   | `/access/verify`      | doctor   | Submit the code; on success grants 30 days of read access |
 | GET    | `/access/grants`      | patient  | Doctors with access to your records |
 | POST   | `/access/grants/:id/revoke` | patient | Revoke a doctor's access |
+| GET    | `/access/audit`       | patient  | Who viewed your plans/visit notes, and every grant/revoke, newest first |
 
 ## Notes
 

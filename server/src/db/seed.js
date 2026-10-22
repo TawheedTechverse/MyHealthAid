@@ -13,7 +13,8 @@ async function main() {
 
     await withTransaction(async (client) => {
       await client.query(
-        'TRUNCATE access_grants, access_requests, tasks, treatment_plans, users RESTART IDENTITY CASCADE',
+        `TRUNCATE audit_log, access_grants, access_requests, tasks, treatment_plans, users
+         RESTART IDENTITY CASCADE`,
       );
 
       const { rows: users } = await client.query(
@@ -155,10 +156,25 @@ async function main() {
 
       // Demo of feature 3: Dr. Shah doesn't treat Ben directly, but has
       // already verified a 2FA code and holds 30 days of read access.
-      await client.query(
+      const { rows: grantRows } = await client.query(
         `INSERT INTO access_grants (doctor_id, patient_id, granted_at, expires_at)
-         VALUES ($1, $2, now() - interval '1 day', now() + interval '29 days')`,
+         VALUES ($1, $2, now() - interval '1 day', now() + interval '29 days')
+         RETURNING id`,
         [secondDoctor.id, ben.id],
+      );
+
+      // Demo of feature 4: the grant above, plus Dr. Reyes viewing Ben's plan,
+      // show up on Ben's "Who viewed my records" page.
+      const { rows: benPlanRows } = await client.query(
+        `SELECT id FROM treatment_plans WHERE patient_id = $1 LIMIT 1`,
+        [ben.id],
+      );
+      await client.query(
+        `INSERT INTO audit_log (doctor_id, patient_id, record_type, record_id, action, created_at)
+         VALUES
+           ($1, $2, 'access_grant', $3, 'grant', now() - interval '1 day'),
+           ($4, $2, 'plan', $5, 'view', now() - interval '2 hours')`,
+        [secondDoctor.id, ben.id, grantRows[0].id, doctor.id, benPlanRows[0].id],
       );
     });
 

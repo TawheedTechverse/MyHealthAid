@@ -10,6 +10,7 @@ import {
   getPlanForUser,
   assertDoctorOwnsPlan,
 } from '../lib/plans.js';
+import { recordAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -49,7 +50,17 @@ router.get(
   '/:id',
   validate(idParam, 'params'),
   asyncHandler(async (req, res) => {
-    res.json({ plan: await getPlanForUser(req.params.id, req.user) });
+    const plan = await getPlanForUser(req.params.id, req.user);
+    if (req.user.role === 'doctor') {
+      await recordAudit({
+        doctorId: req.user.id,
+        patientId: plan.patient.id,
+        recordType: 'plan',
+        recordId: plan.id,
+        action: 'view',
+      });
+    }
+    res.json({ plan });
   }),
 );
 

@@ -33,7 +33,8 @@ export default function AccessGrants() {
       <h1 className="page-title">Doctor access</h1>
       <p className="page-sub">
         Doctors who have verified access to your plans and visit notes beyond your own care
-        team. Access expires automatically after 30 days, or you can revoke it now.
+        team. Access expires automatically after 30 days, or you can revoke it now.{' '}
+        <Link to="/access/audit">Who viewed my records &rarr;</Link>
       </p>
 
       {grants.length === 0 ? (

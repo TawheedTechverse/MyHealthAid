@@ -13,6 +13,7 @@ import {
   assertDoctorOwnsNote,
   assertNoteEditable,
 } from '../lib/visitNotes.js';
+import { recordAudit } from '../lib/audit.js';
 import {
   summarizeTranscript,
   isSummarizerConfigured,
@@ -66,6 +67,15 @@ router.get(
   validate(idParam, 'params'),
   asyncHandler(async (req, res) => {
     const row = await getVisitNoteForUser(req.params.id, req.user);
+    if (req.user.role === 'doctor') {
+      await recordAudit({
+        doctorId: req.user.id,
+        patientId: row.patient_id,
+        recordType: 'visit_note',
+        recordId: row.id,
+        action: 'view',
+      });
+    }
     res.json({ note: serializeVisitNote(row) });
   }),
 );

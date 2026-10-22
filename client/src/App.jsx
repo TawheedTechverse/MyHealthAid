@@ -8,6 +8,7 @@ import PlanDetail from './pages/PlanDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import RequestAccess from './pages/RequestAccess.jsx';
 import AccessGrants from './pages/AccessGrants.jsx';
+import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
   return (
@@ -61,6 +62,14 @@ export default function App() {
           element={
             <ProtectedRoute role="patient">
               <AccessGrants />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/access/audit"
+          element={
+            <ProtectedRoute role="patient">
+              <AuditLog />
             </ProtectedRoute>
           }
         />

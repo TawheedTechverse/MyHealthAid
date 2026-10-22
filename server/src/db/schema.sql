@@ -104,3 +104,18 @@ CREATE TABLE IF NOT EXISTS access_grants (
 );
 
 CREATE INDEX IF NOT EXISTS idx_access_grants_patient ON access_grants(patient_id);
+
+-- Append-only: every time a doctor views a patient's plan or visit note, and
+-- every access grant/revoke. No UPDATE/DELETE route exists for this table -
+-- see lib/audit.js and routes/audit.routes.js.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          BIGSERIAL PRIMARY KEY,
+  doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  patient_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  record_type TEXT NOT NULL CHECK (record_type IN ('plan', 'visit_note', 'access_grant')),
+  record_id   BIGINT,
+  action      TEXT NOT NULL CHECK (action IN ('view', 'grant', 'revoke')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_patient ON audit_log(patient_id, created_at DESC);
