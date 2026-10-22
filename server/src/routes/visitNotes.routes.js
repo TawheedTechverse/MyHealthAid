@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { query } from '../db/pool.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
@@ -10,6 +11,7 @@ import {
   getVisitNoteForUser,
   serializeVisitNote,
   assertDoctorOwnsNote,
+  assertNoteEditable,
 } from '../lib/visitNotes.js';
 import {
   summarizeTranscript,
@@ -38,6 +40,8 @@ const updateSchema = z
     summary: visitSummarySchema.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'No fields to update' });
+
+const passwordSchema = z.object({ password: z.string().min(1) });
 
 router.use(authenticate);
 
@@ -153,7 +157,8 @@ router.post(
   requireRole('doctor'),
   validate(idParam, 'params'),
   asyncHandler(async (req, res) => {
-    await assertDoctorOwnsNote(req.params.id, req.user.id);
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    assertNoteEditable(note);
     if (!isSummarizerConfigured()) {
       throw ApiError.badRequest(
         'Summarization is not configured on the server (GEMINI_API_KEY is unset)',
@@ -171,7 +176,8 @@ router.patch(
   validate(idParam, 'params'),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
-    await assertDoctorOwnsNote(req.params.id, req.user.id);
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    assertNoteEditable(note);
 
     const sets = [];
     const values = [];
@@ -201,9 +207,86 @@ router.delete(
   requireRole('doctor'),
   validate(idParam, 'params'),
   asyncHandler(async (req, res) => {
-    await assertDoctorOwnsNote(req.params.id, req.user.id);
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    assertNoteEditable(note);
     await query('DELETE FROM visit_notes WHERE id = $1', [req.params.id]);
     res.status(204).end();
+  }),
+);
+
+/**
+ * Finalize a reviewed summary: the doctor re-enters their password and the
+ * note is stamped with their name, registration number, and the time, then
+ * locked against further edits.
+ */
+router.post(
+  '/:id/sign',
+  requireRole('doctor'),
+  validate(idParam, 'params'),
+  validate(passwordSchema),
+  asyncHandler(async (req, res) => {
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    if (note.signed_at) {
+      throw ApiError.conflict('This note is already signed');
+    }
+    if (note.summary_status !== 'ready') {
+      throw ApiError.badRequest('Only a note with a reviewed summary can be signed');
+    }
+
+    const { rows } = await query(
+      'SELECT password_hash, full_name, medical_registration_number FROM users WHERE id = $1',
+      [req.user.id],
+    );
+    const doctor = rows[0];
+    if (!doctor.medical_registration_number) {
+      throw ApiError.badRequest(
+        'Set your medical registration number in your profile before signing notes',
+      );
+    }
+    const ok = await bcrypt.compare(req.body.password, doctor.password_hash);
+    if (!ok) {
+      throw ApiError.unauthorized('Incorrect password');
+    }
+
+    await query(
+      `UPDATE visit_notes
+          SET signed_by = $2, signed_name = $3, signed_registration_number = $4, signed_at = now()
+        WHERE id = $1`,
+      [req.params.id, req.user.id, doctor.full_name, doctor.medical_registration_number],
+    );
+
+    const row = await getVisitNoteForUser(req.params.id, req.user);
+    res.json({ note: serializeVisitNote(row) });
+  }),
+);
+
+/** Unsign: same doctor, password required again, clears the signature and unlocks the note. */
+router.post(
+  '/:id/unsign',
+  requireRole('doctor'),
+  validate(idParam, 'params'),
+  validate(passwordSchema),
+  asyncHandler(async (req, res) => {
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    if (!note.signed_at) {
+      throw ApiError.badRequest('This note is not signed');
+    }
+
+    const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    const ok = await bcrypt.compare(req.body.password, rows[0].password_hash);
+    if (!ok) {
+      throw ApiError.unauthorized('Incorrect password');
+    }
+
+    await query(
+      `UPDATE visit_notes
+          SET signed_by = NULL, signed_name = NULL, signed_registration_number = NULL, signed_at = NULL
+        WHERE id = $1`,
+      [req.params.id],
+    );
+
+    const row = await getVisitNoteForUser(req.params.id, req.user);
+    res.json({ note: serializeVisitNote(row) });
   }),
 );
 

@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Doctors: AHPRA-style registration number (3 letters + 10 digits), required
+-- before a doctor can sign a visit note. Validated in the app layer.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_registration_number TEXT;
+
 CREATE TABLE IF NOT EXISTS treatment_plans (
   id          BIGSERIAL PRIMARY KEY,
   doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -56,3 +60,12 @@ CREATE TABLE IF NOT EXISTS visit_notes (
 CREATE INDEX IF NOT EXISTS idx_visit_notes_doctor  ON visit_notes(doctor_id);
 CREATE INDEX IF NOT EXISTS idx_visit_notes_patient ON visit_notes(patient_id);
 CREATE INDEX IF NOT EXISTS idx_visit_notes_plan    ON visit_notes(plan_id);
+
+-- Digital signature: finalizing a reviewed summary requires the doctor's
+-- password and records who signed, their registration number, and when.
+-- While signed_at is set the note is locked (see assertNoteEditable in
+-- lib/visitNotes.js); unsigning (same doctor + password) clears these.
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_by BIGINT REFERENCES users(id);
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_name TEXT;
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_registration_number TEXT;
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ;

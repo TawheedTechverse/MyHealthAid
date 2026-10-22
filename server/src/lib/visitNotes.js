@@ -23,9 +23,25 @@ export function serializeVisitNote(row) {
     summaryStatus: row.summary_status,
     summaryError: row.summary_error ?? null,
     summaryModel: row.summary_model ?? null,
+    signed: Boolean(row.signed_at),
+    signature: row.signed_at
+      ? {
+          doctorId: row.signed_by,
+          fullName: row.signed_name,
+          registrationNumber: row.signed_registration_number,
+          signedAt: row.signed_at,
+        }
+      : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/** A signed note is locked: no edits, regeneration, or deletion until unsigned. */
+export function assertNoteEditable(row) {
+  if (row.signed_at) {
+    throw ApiError.forbidden('This note is signed and locked. Unsign it first to make changes.');
+  }
 }
 
 /**
@@ -78,7 +94,7 @@ export async function getVisitNoteForUser(id, user) {
 /** Load a note and assert the doctor authored it. Used for mutations. */
 export async function assertDoctorOwnsNote(id, doctorId) {
   const { rows } = await query(
-    'SELECT id, doctor_id FROM visit_notes WHERE id = $1',
+    'SELECT id, doctor_id, summary_status, signed_at FROM visit_notes WHERE id = $1',
     [id],
   );
   if (rows.length === 0) {
@@ -87,4 +103,5 @@ export async function assertDoctorOwnsNote(id, doctorId) {
   if (String(rows[0].doctor_id) !== String(doctorId)) {
     throw ApiError.forbidden('Only the note author can change it');
   }
+  return rows[0];
 }

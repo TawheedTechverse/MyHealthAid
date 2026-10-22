@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import CreatePlan from './pages/CreatePlan.jsx';
 import PlanDetail from './pages/PlanDetail.jsx';
+import Profile from './pages/Profile.jsx';
 
 export default function App() {
   return (
@@ -34,6 +35,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PlanDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

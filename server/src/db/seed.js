@@ -15,12 +15,12 @@ async function main() {
       await client.query('TRUNCATE tasks, treatment_plans, users RESTART IDENTITY CASCADE');
 
       const { rows: users } = await client.query(
-        `INSERT INTO users (email, password_hash, full_name, role)
+        `INSERT INTO users (email, password_hash, full_name, role, medical_registration_number)
          VALUES
-           ($1, $5, 'Dr. Alice Reyes', 'doctor'),
-           ($2, $5, 'Ben Carter', 'patient'),
-           ($3, $5, 'Chloe Nguyen', 'patient'),
-           ($4, $5, 'David Okafor', 'patient')
+           ($1, $5, 'Dr. Alice Reyes', 'doctor', 'MED0001234567'),
+           ($2, $5, 'Ben Carter', 'patient', NULL),
+           ($3, $5, 'Chloe Nguyen', 'patient', NULL),
+           ($4, $5, 'David Okafor', 'patient', NULL)
          RETURNING id, email, role`,
         [
           'dr.reyes@myhealthaid.dev',
@@ -47,6 +47,20 @@ async function main() {
             { title: 'Attend physiotherapy session', status: 'pending', due: 3 },
             { title: 'Photograph incision and upload', status: 'pending', due: 5 },
           ],
+          visitNote: {
+            signed: true,
+            transcript:
+              'Patient reports knee pain improving, swelling down. Range of motion to 110 degrees. ' +
+              'Incision clean, no signs of infection. Continue physio, add stationary bike next week.',
+            summary: {
+              chiefComplaint: 'Post-op follow-up, right knee',
+              historyOfPresentIllness: 'Pain and swelling improving since arthroscopic surgery.',
+              assessment: 'Recovering on schedule. Range of motion 110 degrees.',
+              plan: 'Continue physiotherapy; add stationary bike next week.',
+              followUp: 'Review in 2 weeks',
+              medications: [{ name: 'Ibuprofen 400mg', instruction: 'As needed for pain, with food' }],
+            },
+          },
         },
         {
           patient: chloe.id,
@@ -59,6 +73,20 @@ async function main() {
             { title: 'Reduce sodium: no processed food this week', status: 'pending', due: 2 },
             { title: '30 minute brisk walk, 5 days', status: 'pending', due: 4 },
           ],
+          visitNote: {
+            signed: false,
+            transcript:
+              'Blood pressure 138 over 88 today, down from 148 over 92 last visit. Patient tolerating ' +
+              'lisinopril well, no side effects. Encouraged continued sodium reduction and walking.',
+            summary: {
+              chiefComplaint: 'Hypertension review',
+              historyOfPresentIllness: 'BP trending down on current regimen.',
+              assessment: 'Improving, not yet at target.',
+              plan: 'Continue lisinopril 10mg, reinforce lifestyle changes.',
+              followUp: 'Review in 4 weeks',
+              medications: [{ name: 'Lisinopril 10mg', instruction: 'Once daily each morning' }],
+            },
+          },
         },
         {
           patient: david.id,
@@ -94,6 +122,27 @@ async function main() {
               t.status === 'done' ? new Date() : null,
               t.due,
               i,
+            ],
+          );
+        }
+
+        if (plan.visitNote) {
+          const vn = plan.visitNote;
+          await client.query(
+            `INSERT INTO visit_notes
+               (doctor_id, patient_id, plan_id, transcript, summary, summary_status, summary_model,
+                signed_by, signed_name, signed_registration_number, signed_at)
+             VALUES ($1, $2, $3, $4, $5, 'ready', 'gemini-flash-latest', $6, $7, $8, $9)`,
+            [
+              doctor.id,
+              plan.patient,
+              planId,
+              vn.transcript,
+              vn.summary,
+              vn.signed ? doctor.id : null,
+              vn.signed ? 'Dr. Alice Reyes' : null,
+              vn.signed ? 'MED0001234567' : null,
+              vn.signed ? new Date() : null,
             ],
           );
         }

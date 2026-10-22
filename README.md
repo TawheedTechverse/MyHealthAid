@@ -7,7 +7,10 @@ a dashboard that rolls up progress.
 Doctors can also dictate **voice visit notes**: speech is transcribed live in the
 browser, then the server turns the transcript into a structured clinical summary
 (chief complaint, assessment, plan, follow-up, medications) that the doctor
-reviews and edits instead of writing from memory.
+reviews and edits instead of writing from memory. Once reviewed, a doctor can
+**digitally sign** a note (password re-entry required) to lock it and attach a
+signature block (name, registration number, timestamp); unsigned notes are
+labelled "Draft – not verified" everywhere, including to the patient.
 
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
@@ -130,8 +133,14 @@ tasks(id, plan_id -> treatment_plans, title, description, due_date,
 visit_notes(id, doctor_id -> users, patient_id -> users,
             plan_id -> treatment_plans NULL, transcript,
             summary JSONB, summary_status['none'|'pending'|'ready'|'error'],
-            summary_error, summary_model, created_at, updated_at)
+            summary_error, summary_model,
+            signed_by -> users NULL, signed_name, signed_registration_number, signed_at,
+            created_at, updated_at)
 ```
+
+`users.medical_registration_number` is set by doctors in their profile (AHPRA-style:
+3 letters + 10 digits, e.g. `MED0001234567`) and is required before they can sign a
+note.
 
 ## API
 
@@ -142,6 +151,7 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | POST   | `/auth/register`      | anon     | Create account, returns token + user     |
 | POST   | `/auth/login`         | anon     | Log in, returns token + user             |
 | GET    | `/auth/me`            | any      | Current user                             |
+| PATCH  | `/auth/profile`       | any      | Doctor: set medical registration number  |
 | GET    | `/dashboard`          | any      | Role-aware summary (+ patients / up-next) |
 | GET    | `/plans`              | any      | Plans you own (doctor) or are on (patient) |
 | POST   | `/plans`              | doctor   | Create a plan with optional tasks        |
@@ -157,8 +167,10 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | POST   | `/visit-notes`        | doctor   | Create from a transcript; summarizes inline if configured |
 | GET    | `/visit-notes/:id`    | participant | One note with transcript + summary   |
 | POST   | `/visit-notes/:id/summarize` | owner doctor | (Re)generate the summary        |
-| PATCH  | `/visit-notes/:id`    | owner doctor | Edit transcript or summary fields    |
-| DELETE | `/visit-notes/:id`    | owner doctor | Delete a note                        |
+| PATCH  | `/visit-notes/:id`    | owner doctor | Edit transcript or summary fields (blocked once signed) |
+| DELETE | `/visit-notes/:id`    | owner doctor | Delete a note (blocked once signed)  |
+| POST   | `/visit-notes/:id/sign` | owner doctor | Password + reviewed summary required; stamps name, registration number, and time, then locks the note |
+| POST   | `/visit-notes/:id/unsign` | owner doctor | Password required; clears the signature and unlocks the note |
 
 ## Notes
 

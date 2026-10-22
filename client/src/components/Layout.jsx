@@ -22,9 +22,9 @@ export default function Layout({ children }) {
         <ThemeToggle />
         {user && (
           <div className="topbar-user">
-            <span>
+            <Link to="/profile">
               {user.fullName} <span className="badge">{user.role}</span>
-            </span>
+            </Link>
             <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
               Sign out
             </button>

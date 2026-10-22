@@ -25,8 +25,32 @@ export default function VisitNoteCard({ note, canEdit, summarizerConfigured, onC
   const [draft, setDraft] = useState(EMPTY_SUMMARY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [signPrompt, setSignPrompt] = useState(null); // 'sign' | 'unsign' | null
+  const [password, setPassword] = useState('');
 
   const summary = note.summary;
+  const locked = note.signed;
+
+  function cancelSignPrompt() {
+    setSignPrompt(null);
+    setPassword('');
+    setError('');
+  }
+
+  async function submitSign() {
+    if (!password) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api.post(`/visit-notes/${note.id}/${signPrompt}`, { password });
+      onChange?.(res.data.note);
+      cancelSignPrompt();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function startEdit() {
     setDraft({ ...EMPTY_SUMMARY, ...(summary || {}), medications: summary?.medications ?? [] });
@@ -90,16 +114,31 @@ export default function VisitNoteCard({ note, canEdit, summarizerConfigured, onC
             </>
           )}
         </div>
-        <span className={`badge ${note.summaryStatus === 'ready' ? 'completed' : ''}`}>
-          {note.summaryStatus === 'ready'
-            ? 'summary'
-            : note.summaryStatus === 'pending'
-              ? 'summarizing'
-              : note.summaryStatus === 'error'
-                ? 'summary failed'
-                : 'transcript only'}
-        </span>
+        <div className="row" style={{ gap: 6 }}>
+          <span className={`badge ${note.summaryStatus === 'ready' ? 'completed' : ''}`}>
+            {note.summaryStatus === 'ready'
+              ? 'summary'
+              : note.summaryStatus === 'pending'
+                ? 'summarizing'
+                : note.summaryStatus === 'error'
+                  ? 'summary failed'
+                  : 'transcript only'}
+          </span>
+          <span className={`badge ${locked ? 'completed' : ''}`}>
+            {locked ? 'Verified' : 'Draft – not verified'}
+          </span>
+        </div>
       </div>
+
+      {locked && note.signature && (
+        <div className="glass card signature-block">
+          <div className="note-label">Signed</div>
+          <div>{note.signature.fullName}</div>
+          <div className="muted" style={{ fontSize: '0.85rem' }}>
+            {note.signature.registrationNumber} · {formatDateTime(note.signature.signedAt)}
+          </div>
+        </div>
+      )}
 
       {error && <div className="error-text">{error}</div>}
 
@@ -229,24 +268,60 @@ export default function VisitNoteCard({ note, canEdit, summarizerConfigured, onC
         <p style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{note.transcript}</p>
       </details>
 
+      {/* ---- sign / unsign password confirmation ---- */}
+      {signPrompt && (
+        <div className="glass card stack" style={{ padding: 14 }}>
+          <strong>
+            {signPrompt === 'sign' ? 'Sign this note' : 'Unsign this note'} — re-enter your password
+            to confirm
+          </strong>
+          <input
+            type="password"
+            autoFocus
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+          />
+          <div className="row">
+            <button className="btn btn-primary btn-sm" disabled={busy || !password} onClick={submitSign}>
+              {busy ? 'Confirming…' : signPrompt === 'sign' ? 'Sign & lock' : 'Unsign & unlock'}
+            </button>
+            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={cancelSignPrompt}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ---- actions ---- */}
-      {canEdit && !editing && (
+      {canEdit && !editing && !signPrompt && (
         <div className="row">
-          {note.summaryStatus === 'ready' && (
+          {!locked && note.summaryStatus === 'ready' && (
             <button className="btn btn-ghost btn-sm" onClick={startEdit} disabled={busy}>
               Edit summary
             </button>
           )}
-          {summarizerConfigured && note.summaryStatus !== 'pending' && (
+          {!locked && summarizerConfigured && note.summaryStatus !== 'pending' && (
             <button className="btn btn-ghost btn-sm" onClick={regenerate} disabled={busy}>
               {note.summaryStatus === 'ready' || note.summaryStatus === 'error'
                 ? 'Regenerate'
                 : 'Summarize'}
             </button>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy}>
-            Delete
-          </button>
+          {note.summaryStatus === 'ready' && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setSignPrompt(locked ? 'unsign' : 'sign')}
+              disabled={busy}
+            >
+              {locked ? 'Unsign' : 'Sign & lock'}
+            </button>
+          )}
+          {!locked && (
+            <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy}>
+              Delete
+            </button>
+          )}
         </div>
       )}
     </div>

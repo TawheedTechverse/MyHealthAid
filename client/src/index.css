@@ -543,6 +543,11 @@ textarea {
   }
 }
 
+.signature-block {
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+}
+
 .visit-note .note-label {
   font-size: 0.72rem;
   font-weight: 700;

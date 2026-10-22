@@ -7,6 +7,7 @@ import { ApiError } from '../lib/ApiError.js';
 import { signToken } from '../lib/jwt.js';
 import { validate } from '../middleware/validate.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { REGISTRATION_NUMBER_RE } from '../lib/validators.js';
 
 const router = Router();
 
@@ -22,8 +23,25 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const updateProfileSchema = z
+  .object({
+    medicalRegistrationNumber: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(REGISTRATION_NUMBER_RE, 'Must be 3 letters followed by 10 digits, e.g. MED0001234567'),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'No fields to update' });
+
 function publicUser(row) {
-  return { id: row.id, email: row.email, fullName: row.full_name, role: row.role };
+  return {
+    id: row.id,
+    email: row.email,
+    fullName: row.full_name,
+    role: row.role,
+    medicalRegistrationNumber: row.medical_registration_number ?? null,
+  };
 }
 
 router.post(
@@ -78,6 +96,31 @@ router.get(
   authenticate,
   asyncHandler(async (req, res) => {
     res.json({ user: req.user });
+  }),
+);
+
+router.patch(
+  '/profile',
+  authenticate,
+  validate(updateProfileSchema),
+  asyncHandler(async (req, res) => {
+    if (req.body.medicalRegistrationNumber !== undefined && req.user.role !== 'doctor') {
+      throw ApiError.forbidden('Only doctors have a medical registration number');
+    }
+
+    const fields = [];
+    const values = [];
+    if (req.body.medicalRegistrationNumber !== undefined) {
+      values.push(req.body.medicalRegistrationNumber);
+      fields.push(`medical_registration_number = $${values.length}`);
+    }
+    values.push(req.user.id);
+    const { rows } = await query(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${values.length}
+       RETURNING id, email, full_name, role, medical_registration_number`,
+      values,
+    );
+    res.json({ user: publicUser(rows[0]) });
   }),
 );
 
