@@ -5,20 +5,49 @@
 :root {
   color-scheme: light;
 
+  /* Decorative gradient stops - used for button/progress fills and other
+     elements with their own fixed (white) foreground, so they don't need a
+     dark-mode override. */
   --red-700: #b91324;
   --red-600: #e11d2e;
   --red-500: #f2374b;
   --red-400: #ff5a6e;
   --red-300: #ff8a98;
 
+  /* Themeable semantic tokens - every one of these is redefined below under
+     the dark theme so text stays at WCAG AA contrast against its surface. */
   --ink: #3a1a20;
   --ink-soft: #6b4a50;
   --ink-faint: #9a7a80;
+
+  --accent: #b91324; /* red text/icons on a glass surface */
+  --accent-strong: #e11d2e; /* links */
+  --accent-soft-bg: rgba(185, 19, 36, 0.12);
 
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-bg-strong: rgba(255, 255, 255, 0.78);
   --glass-border: rgba(255, 255, 255, 0.75);
   --glass-shadow: 0 20px 45px -20px rgba(177, 19, 36, 0.45);
+
+  --topbar-bg: rgba(255, 255, 255, 0.6);
+  --surface-faint: rgba(255, 255, 255, 0.55);
+  --surface-faint-strong: rgba(255, 255, 255, 0.85);
+
+  --input-border: rgba(185, 19, 36, 0.22);
+  --focus-ring: rgba(242, 55, 75, 0.18);
+  --progress-track: rgba(185, 19, 36, 0.14);
+
+  --error-bg: rgba(225, 29, 46, 0.1);
+  --error-border: rgba(225, 29, 46, 0.25);
+
+  --badge-green-bg: rgba(21, 128, 61, 0.14);
+  --badge-green-text: #15803d;
+  --badge-gray-bg: rgba(100, 116, 139, 0.16);
+  --badge-gray-text: #475569;
+
+  --page-bg-img: radial-gradient(1100px 620px at 8% -8%, rgba(255, 138, 152, 0.55), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(255, 90, 110, 0.4), transparent 55%),
+    linear-gradient(160deg, #ffffff 0%, #ffe9ec 45%, #ffccd3 100%);
 
   --radius-lg: 22px;
   --radius-md: 14px;
@@ -26,6 +55,46 @@
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
     "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Dark theme. The bootstrap script in index.html runs synchronously before
+   first paint and always sets data-theme to "light" or "dark" (from
+   localStorage, falling back to the OS setting), so this attribute selector
+   alone is enough - no separate prefers-color-scheme block is needed here. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f3e8ea;
+  --ink-soft: #cfb0b6;
+  --ink-faint: #a98a90;
+
+  --accent: #ff8a98;
+  --accent-strong: #ff5a6e;
+  --accent-soft-bg: rgba(255, 138, 152, 0.16);
+
+  --glass-bg: rgba(35, 18, 22, 0.55);
+  --glass-bg-strong: rgba(35, 18, 22, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.65);
+
+  --topbar-bg: rgba(20, 11, 13, 0.7);
+  --surface-faint: rgba(255, 255, 255, 0.06);
+  --surface-faint-strong: rgba(255, 255, 255, 0.14);
+
+  --input-border: rgba(255, 138, 152, 0.3);
+  --focus-ring: rgba(255, 90, 110, 0.3);
+  --progress-track: rgba(255, 138, 152, 0.16);
+
+  --error-bg: rgba(255, 90, 110, 0.14);
+  --error-border: rgba(255, 90, 110, 0.32);
+
+  --badge-green-bg: rgba(74, 222, 128, 0.16);
+  --badge-green-text: #4ade80;
+  --badge-gray-bg: rgba(148, 163, 184, 0.18);
+  --badge-gray-text: #cbd5e1;
+
+  --page-bg-img: radial-gradient(1100px 620px at 8% -8%, rgba(120, 25, 38, 0.5), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(140, 25, 45, 0.35), transparent 55%),
+    linear-gradient(160deg, #1a0f12 0%, #241318 45%, #2c1117 100%);
 }
 
 * {
@@ -42,16 +111,14 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--ink);
-  background:
-    radial-gradient(1100px 620px at 8% -8%, rgba(255, 138, 152, 0.55), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(255, 90, 110, 0.4), transparent 55%),
-    linear-gradient(160deg, #ffffff 0%, #ffe9ec 45%, #ffccd3 100%);
+  background: var(--page-bg-img);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {
-  color: var(--red-600);
+  color: var(--accent-strong);
   text-decoration: none;
 }
 a:hover {
@@ -95,7 +162,7 @@ p {
   align-items: center;
   gap: 16px;
   padding: 14px clamp(16px, 4vw, 40px);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--topbar-bg);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   border-bottom: 1px solid var(--glass-border);
@@ -171,7 +238,7 @@ p {
 .stat .value {
   font-size: 1.9rem;
   font-weight: 800;
-  color: var(--red-700);
+  color: var(--accent);
 }
 .stat .label {
   font-size: 0.82rem;
@@ -185,7 +252,7 @@ p {
 .progress {
   height: 10px;
   border-radius: 999px;
-  background: rgba(185, 19, 36, 0.14);
+  background: var(--progress-track);
   overflow: hidden;
 }
 .progress > span {
@@ -225,7 +292,7 @@ textarea {
   font: inherit;
   color: var(--ink);
   background: var(--glass-bg-strong);
-  border: 1px solid rgba(185, 19, 36, 0.22);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -234,7 +301,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--red-500);
-  box-shadow: 0 0 0 3px rgba(242, 55, 75, 0.18);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 textarea {
   min-height: 84px;
@@ -270,12 +337,12 @@ textarea {
   box-shadow: 0 16px 30px -10px rgba(185, 19, 36, 0.85);
 }
 .btn-ghost {
-  color: var(--red-700);
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(185, 19, 36, 0.25);
+  color: var(--accent);
+  background: var(--surface-faint);
+  border: 1px solid var(--input-border);
 }
 .btn-ghost:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-faint-strong);
 }
 .btn-sm {
   padding: 7px 12px;
@@ -295,16 +362,16 @@ textarea {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: 999px;
-  background: rgba(185, 19, 36, 0.12);
-  color: var(--red-700);
+  background: var(--accent-soft-bg);
+  color: var(--accent);
 }
 .badge.completed {
-  background: rgba(21, 128, 61, 0.14);
-  color: #15803d;
+  background: var(--badge-green-bg);
+  color: var(--badge-green-text);
 }
 .badge.archived {
-  background: rgba(100, 116, 139, 0.16);
-  color: #475569;
+  background: var(--badge-gray-bg);
+  color: var(--badge-gray-text);
 }
 
 .stack {
@@ -325,9 +392,9 @@ textarea {
   color: var(--ink-faint);
 }
 .error-text {
-  color: var(--red-700);
-  background: rgba(225, 29, 46, 0.1);
-  border: 1px solid rgba(225, 29, 46, 0.25);
+  color: var(--accent);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: 0.9rem;
@@ -350,8 +417,8 @@ textarea {
   gap: 12px;
   padding: 14px 16px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: var(--surface-faint);
+  border: 1px solid var(--glass-border);
 }
 .task.done .task-title {
   text-decoration: line-through;
@@ -404,8 +471,8 @@ textarea {
   flex: 1;
   padding: 9px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(185, 19, 36, 0.2);
-  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--input-border);
+  background: var(--surface-faint);
   font: inherit;
   font-weight: 600;
   color: var(--ink-soft);
@@ -428,7 +495,7 @@ textarea {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid rgba(185, 19, 36, 0.2);
+  border: 3px solid var(--input-border);
   border-top-color: var(--red-600);
   animation: spin 0.8s linear infinite;
 }
@@ -447,7 +514,12 @@ textarea {
 /* ---------- visit notes / voice recorder ---------- */
 
 .recorder textarea {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-faint-strong);
+}
+
+.theme-toggle {
+  padding: 8px;
+  line-height: 0;
 }
 
 .rec-dot {
@@ -476,12 +548,12 @@ textarea {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--red-700);
+  color: var(--accent);
   margin-bottom: 2px;
 }
 
 .transcript-toggle {
-  border-top: 1px dashed rgba(185, 19, 36, 0.25);
+  border-top: 1px dashed var(--input-border);
   padding-top: 10px;
 }
 .transcript-toggle summary {
@@ -503,10 +575,7 @@ textarea {
   padding: 24px;
   text-align: center;
   cursor: pointer;
-  background:
-    radial-gradient(1100px 620px at 8% -8%, rgba(255, 138, 152, 0.55), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(255, 90, 110, 0.4), transparent 55%),
-    linear-gradient(160deg, #ffffff 0%, #ffe9ec 45%, #ffccd3 100%);
+  background: var(--page-bg-img);
   animation: splash-fade-in 0.3s ease-out;
 }
 .splash-leaving {

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -18,6 +19,7 @@ export default function Layout({ children }) {
           MyHealthAid
         </Link>
         <div className="topbar-spacer" />
+        <ThemeToggle />
         {user && (
           <div className="topbar-user">
             <span>

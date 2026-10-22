@@ -9,7 +9,7 @@ browser, then the server turns the transcript into a structured clinical summary
 (chief complaint, assessment, plan, follow-up, medications) that the doctor
 reviews and edits instead of writing from memory.
 
-- **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme). Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
+- **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
 

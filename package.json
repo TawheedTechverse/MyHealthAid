@@ -16,7 +16,9 @@
     "start": "npm run start -w server",
     "db:migrate": "npm run migrate -w server",
     "db:seed": "npm run seed -w server",
-    "db:reset": "npm run reset -w server"
+    "db:reset": "npm run reset -w server",
+    "test": "npm run test -w server",
+    "test:api": "npm run test:api -w server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

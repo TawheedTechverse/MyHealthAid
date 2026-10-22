@@ -9,6 +9,24 @@
       content="MyHealthAid - shared treatment tracking for patients and doctors."
     />
     <title>MyHealthAid</title>
+    <script>
+      // Applied synchronously, before first paint, so the page never flashes
+      // the wrong theme while React boots.
+      (function () {
+        try {
+          var stored = localStorage.getItem('myhealthaid.theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          /* localStorage unavailable (private mode) - default styling (light) applies */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
