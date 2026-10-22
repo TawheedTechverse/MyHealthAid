@@ -7,6 +7,7 @@ import visitNoteRoutes from './visitNotes.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import accessRoutes from './access.routes.js';
 import symptomCheckRoutes from './symptomChecks.routes.js';
+import emergencyCardRoutes from './emergencyCard.routes.js';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/visit-notes', visitNoteRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/access', accessRoutes);
 router.use('/symptom-checks', symptomCheckRoutes);
+router.use('/emergency-card', emergencyCardRoutes);
 
 export default router;

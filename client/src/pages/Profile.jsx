@@ -7,6 +7,7 @@ export default function Profile() {
   const { user, setUser } = useAuth();
   const [regNumber, setRegNumber] = useState(user.medicalRegistrationNumber ?? '');
   const [phone, setPhone] = useState(user.phone ?? '');
+  const [allergies, setAllergies] = useState(user.allergies ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -20,7 +21,7 @@ export default function Profile() {
       const body =
         user.role === 'doctor'
           ? { medicalRegistrationNumber: regNumber }
-          : { phone };
+          : { phone, allergies };
       const res = await api.patch('/auth/profile', body);
       setUser(res.data.user);
       setSaved(true);
@@ -78,6 +79,17 @@ export default function Profile() {
               <p className="muted" style={{ fontSize: '0.8rem', marginTop: -8 }}>
                 Used to text you a verification code when a new doctor requests access to your
                 records. <Link to="/access/grants">Manage doctor access &rarr;</Link>
+              </p>
+              <label className="field">
+                <span>Allergies</span>
+                <input
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                  placeholder="e.g. Penicillin, peanuts"
+                />
+              </label>
+              <p className="muted" style={{ fontSize: '0.8rem', marginTop: -8 }}>
+                Shown on your <Link to="/emergency-card">emergency card</Link>.
               </p>
             </>
           )}

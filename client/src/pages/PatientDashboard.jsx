@@ -27,6 +27,9 @@ export default function PatientDashboard() {
           <Link to="/symptoms" className="btn btn-primary btn-sm">
             Check a symptom
           </Link>
+          <Link to="/emergency-card" className="btn btn-ghost btn-sm">
+            Emergency card
+          </Link>
           <Link to="/access/grants" className="btn btn-ghost btn-sm">
             Doctor access
           </Link>

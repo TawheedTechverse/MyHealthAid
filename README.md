@@ -39,6 +39,14 @@ prescription); invalid or missing output always falls back to "see-gp".
 Every check is saved so the treating doctor can see it on the patient's
 record.
 
+Patients also get an **emergency card**: a small HMAC-signed summary
+(allergies, current medications, latest visit date, doctor name) shown as a
+QR code, and - on Chrome for Android with NFC hardware - writable to an NFC
+tag. Doctors scan it (NFC or camera QR, with a manual paste fallback) and
+see "Verified" or "Not verified"; "Block lost card" bumps a version number
+so any previously issued card reads as revoked once verified online. See
+"Browser limits" below for what this can and can't do offline.
+
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
@@ -181,6 +189,9 @@ symptom_checks(id, patient_id -> users, input, red_flag,
                model, created_at)
 ```
 
+`users.allergies` and `users.emergency_card_version` back the emergency card
+(the version is bumped by "Block lost card" to revoke earlier cards).
+
 `audit_log` is append-only: there is no route to update or delete an entry.
 
 `users.medical_registration_number` is set by doctors in their profile (AHPRA-style:
@@ -226,6 +237,27 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | GET    | `/access/audit`       | patient  | Who viewed your plans/visit notes, and every grant/revoke, newest first |
 | POST   | `/symptom-checks`     | patient  | Check a symptom; red flags escalate without calling the AI |
 | GET    | `/symptom-checks?patientId=` | any | Patient: your own checks · Doctor: checks for patients you treat/have access to |
+| GET    | `/emergency-card`     | patient  | Your current signed card |
+| POST   | `/emergency-card/block` | patient | Revoke the current card and issue a fresh one |
+| POST   | `/emergency-card/verify` | doctor | Check a scanned card's signature and that it hasn't been revoked |
+
+## Browser limits (emergency card)
+
+- **Web NFC** (writing the card to a tag, and scanning one) only works in
+  Chrome on Android with NFC hardware turned on, over HTTPS (or
+  `localhost`). It's unavailable in Safari, Firefox, desktop Chrome, and
+  Chrome on iOS — on those, the QR code is the only option.
+- **Camera QR scanning** uses the `BarcodeDetector` API, supported in
+  Chrome/Edge but not Safari or Firefox. Where it's unavailable, a doctor
+  can still verify by pasting the card's text manually (e.g. from a
+  separate QR scanner app).
+- **Scanning is offline-capable; verifying is not.** Reading an NFC tag or
+  decoding a QR code happens entirely on-device. But the card is signed
+  with a server-held HMAC key (symmetric, not a public/private keypair), so
+  checking the signature — and whether the card has since been blocked —
+  requires asking the server. A doctor with no connectivity can read the
+  card's contents but cannot get a cryptographic "Verified"/"Not verified"
+  result until they're back online.
 
 ## Notes
 

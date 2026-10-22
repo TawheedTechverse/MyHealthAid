@@ -19,13 +19,13 @@ async function main() {
       );
 
       const { rows: users } = await client.query(
-        `INSERT INTO users (email, password_hash, full_name, role, medical_registration_number, phone)
+        `INSERT INTO users (email, password_hash, full_name, role, medical_registration_number, phone, allergies)
          VALUES
-           ($1, $6, 'Dr. Alice Reyes', 'doctor', 'MED0001234567', NULL),
-           ($2, $6, 'Dr. Priya Shah', 'doctor', 'MED0009876543', NULL),
-           ($3, $6, 'Ben Carter', 'patient', NULL, '+61412345671'),
-           ($4, $6, 'Chloe Nguyen', 'patient', NULL, '+61412345672'),
-           ($5, $6, 'David Okafor', 'patient', NULL, '+61412345673')
+           ($1, $6, 'Dr. Alice Reyes', 'doctor', 'MED0001234567', NULL, NULL),
+           ($2, $6, 'Dr. Priya Shah', 'doctor', 'MED0009876543', NULL, NULL),
+           ($3, $6, 'Ben Carter', 'patient', NULL, '+61412345671', 'Penicillin'),
+           ($4, $6, 'Chloe Nguyen', 'patient', NULL, '+61412345672', 'None known'),
+           ($5, $6, 'David Okafor', 'patient', NULL, '+61412345673', 'Peanuts')
          RETURNING id, email, role, full_name`,
         [
           'dr.reyes@myhealthaid.dev',

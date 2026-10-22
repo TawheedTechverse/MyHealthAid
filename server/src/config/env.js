@@ -17,11 +17,13 @@ function required(name, fallback) {
   return value;
 }
 
+const jwtSecret = required('JWT_SECRET', 'dev-only-insecure-secret');
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required('DATABASE_URL'),
   pgSsl: String(process.env.PG_SSL).toLowerCase() === 'true',
-  jwtSecret: required('JWT_SECRET', 'dev-only-insecure-secret'),
+  jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   isProd: process.env.NODE_ENV === 'production',
@@ -47,4 +49,9 @@ export const config = {
   smtpUser: (process.env.SMTP_USER ?? '').trim(),
   smtpPass: (process.env.SMTP_PASS ?? '').trim(),
   smtpFrom: (process.env.SMTP_FROM ?? '').trim(),
+
+  // HMAC key for signing emergency cards (lib/emergencyCard.js). Falls back
+  // to JWT_SECRET (already required and unique per deployment) so this
+  // doesn't need its own mandatory env var, but can be overridden.
+  emergencyCardSecret: (process.env.EMERGENCY_CARD_SECRET ?? jwtSecret).trim(),
 };

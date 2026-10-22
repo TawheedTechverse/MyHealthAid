@@ -18,6 +18,13 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_registration_number TEXT;
 -- access to their records (lib/access.js). Validated in the app layer.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
 
+-- Patients: free-text allergies, shown on the emergency card (lib/emergencyCard.js).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS allergies TEXT;
+
+-- Bumped by "Block lost card"; a card signed with an older version number
+-- fails verification even if its HMAC signature is otherwise valid.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_card_version INTEGER NOT NULL DEFAULT 1;
+
 CREATE TABLE IF NOT EXISTS treatment_plans (
   id          BIGSERIAL PRIMARY KEY,
   doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

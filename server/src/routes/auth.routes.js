@@ -41,6 +41,7 @@ const updateProfileSchema = z
       .toUpperCase()
       .regex(REGISTRATION_NUMBER_RE, 'Must be 3 letters followed by 10 digits, e.g. MED0001234567'),
     phone: z.string().trim().regex(PHONE_RE, 'Enter a valid phone number, e.g. +61412345678'),
+    allergies: z.string().trim().max(500),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'No fields to update' });
@@ -53,6 +54,7 @@ function publicUser(row) {
     role: row.role,
     medicalRegistrationNumber: row.medical_registration_number ?? null,
     phone: row.phone ?? null,
+    allergies: row.allergies ?? null,
   };
 }
 
@@ -119,8 +121,8 @@ router.patch(
     if (req.body.medicalRegistrationNumber !== undefined && req.user.role !== 'doctor') {
       throw ApiError.forbidden('Only doctors have a medical registration number');
     }
-    if (req.body.phone !== undefined && req.user.role !== 'patient') {
-      throw ApiError.forbidden('Only patients set a phone number here');
+    if ((req.body.phone !== undefined || req.body.allergies !== undefined) && req.user.role !== 'patient') {
+      throw ApiError.forbidden('Only patients set these fields');
     }
 
     const fields = [];
@@ -133,10 +135,14 @@ router.patch(
       values.push(req.body.phone);
       fields.push(`phone = $${values.length}`);
     }
+    if (req.body.allergies !== undefined) {
+      values.push(req.body.allergies);
+      fields.push(`allergies = $${values.length}`);
+    }
     values.push(req.user.id);
     const { rows } = await query(
       `UPDATE users SET ${fields.join(', ')} WHERE id = $${values.length}
-       RETURNING id, email, full_name, role, medical_registration_number, phone`,
+       RETURNING id, email, full_name, role, medical_registration_number, phone, allergies`,
       values,
     );
     res.json({ user: publicUser(rows[0]) });

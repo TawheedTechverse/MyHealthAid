@@ -10,6 +10,8 @@ import RequestAccess from './pages/RequestAccess.jsx';
 import AccessGrants from './pages/AccessGrants.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 import CheckSymptom from './pages/CheckSymptom.jsx';
+import EmergencyCard from './pages/EmergencyCard.jsx';
+import ScanEmergencyCard from './pages/ScanEmergencyCard.jsx';
 
 export default function App() {
   return (
@@ -79,6 +81,22 @@ export default function App() {
           element={
             <ProtectedRoute role="patient">
               <CheckSymptom />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/emergency-card"
+          element={
+            <ProtectedRoute role="patient">
+              <EmergencyCard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scan-emergency-card"
+          element={
+            <ProtectedRoute role="doctor">
+              <ScanEmergencyCard />
             </ProtectedRoute>
           }
         />

@@ -22,7 +22,7 @@ export async function authenticate(req, _res, next) {
     }
 
     const { rows } = await query(
-      'SELECT id, email, full_name, role, medical_registration_number, phone FROM users WHERE id = $1',
+      'SELECT id, email, full_name, role, medical_registration_number, phone, allergies FROM users WHERE id = $1',
       [payload.sub],
     );
     if (rows.length === 0) {
@@ -37,6 +37,7 @@ export async function authenticate(req, _res, next) {
       role: row.role,
       medicalRegistrationNumber: row.medical_registration_number ?? null,
       phone: row.phone ?? null,
+      allergies: row.allergies ?? null,
     };
     next();
   } catch (err) {

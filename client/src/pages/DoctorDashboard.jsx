@@ -25,6 +25,9 @@ export default function DoctorDashboard() {
           <p className="page-sub">Track every patient&apos;s progress at a glance.</p>
         </div>
         <div className="row">
+          <Link to="/scan-emergency-card" className="btn btn-ghost">
+            Scan emergency card
+          </Link>
           <Link to="/access/request" className="btn btn-ghost">
             Request patient access
           </Link>
