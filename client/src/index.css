@@ -548,6 +548,11 @@ textarea {
   border-left: 3px solid var(--accent);
 }
 
+.emergency-banner {
+  border: 2px solid var(--red-600);
+  background: var(--error-bg);
+}
+
 .visit-note .note-label {
   font-size: 0.72rem;
   font-weight: 700;

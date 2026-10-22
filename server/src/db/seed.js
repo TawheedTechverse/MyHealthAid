@@ -13,7 +13,8 @@ async function main() {
 
     await withTransaction(async (client) => {
       await client.query(
-        `TRUNCATE audit_log, access_grants, access_requests, tasks, treatment_plans, users
+        `TRUNCATE audit_log, symptom_checks, access_grants, access_requests,
+                  tasks, treatment_plans, users
          RESTART IDENTITY CASCADE`,
       );
 
@@ -175,6 +176,22 @@ async function main() {
            ($1, $2, 'access_grant', $3, 'grant', now() - interval '1 day'),
            ($4, $2, 'plan', $5, 'view', now() - interval '2 hours')`,
         [secondDoctor.id, ben.id, grantRows[0].id, doctor.id, benPlanRows[0].id],
+      );
+
+      // Demo of feature 6: one safe, AI-assessed check and one red-flag
+      // check that escalated without ever calling the AI.
+      await client.query(
+        `INSERT INTO symptom_checks (patient_id, input, red_flag, urgency, advice, reasons, model, created_at)
+         VALUES
+           ($1, 'I have had a mild headache since yesterday afternoon, no other symptoms.',
+            false, 'self-care',
+            'This sounds like a mild, common headache. Rest, stay hydrated, and over-the-counter pain relief as directed should help. See your GP if it worsens or lasts more than a few days.',
+            '["Mild, non-specific symptom with no red flags"]'::jsonb, $2, now() - interval '3 days'),
+           ($1, 'I have crushing chest pain and feel short of breath.',
+            true, 'urgent',
+            'Call Triple Zero (000) or go to the nearest emergency department.',
+            '["chest pain", "difficulty breathing"]'::jsonb, NULL, now() - interval '1 day')`,
+        [ben.id, 'gemini-flash-latest'],
       );
     });
 

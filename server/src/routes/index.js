@@ -6,6 +6,7 @@ import taskRoutes from './tasks.routes.js';
 import visitNoteRoutes from './visitNotes.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import accessRoutes from './access.routes.js';
+import symptomCheckRoutes from './symptomChecks.routes.js';
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use('/tasks', taskRoutes);
 router.use('/visit-notes', visitNoteRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/access', accessRoutes);
+router.use('/symptom-checks', symptomCheckRoutes);
 
 export default router;

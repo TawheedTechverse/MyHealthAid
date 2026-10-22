@@ -10,8 +10,8 @@
     "migrate": "node src/db/migrate.js",
     "seed": "node src/db/seed.js",
     "reset": "node src/db/migrate.js --drop && node src/db/seed.js",
-    "test": "node --import ./test/setupEnv.js --test \"test/unit/**/*.test.js\"",
-    "test:api": "node --import ./test/setupEnv.js --test \"test/api/**/*.test.js\""
+    "test": "node --import ./test/setupEnv.js --test --test-concurrency=1 \"test/unit/**/*.test.js\"",
+    "test:api": "node --import ./test/setupEnv.js --test --test-concurrency=1 \"test/api/**/*.test.js\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

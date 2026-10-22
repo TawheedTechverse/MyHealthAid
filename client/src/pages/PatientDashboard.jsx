@@ -23,9 +23,14 @@ export default function PatientDashboard() {
           <h1 className="page-title">Your treatment</h1>
           <p className="page-sub">Everything your care team has planned for you.</p>
         </div>
-        <Link to="/access/grants" className="btn btn-ghost btn-sm">
-          Doctor access
-        </Link>
+        <div className="row">
+          <Link to="/symptoms" className="btn btn-primary btn-sm">
+            Check a symptom
+          </Link>
+          <Link to="/access/grants" className="btn btn-ghost btn-sm">
+            Doctor access
+          </Link>
+        </div>
       </div>
 
       <div className="stat-row">

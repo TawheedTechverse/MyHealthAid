@@ -20,7 +20,8 @@ export async function startServer() {
 /** Wipes every app table. Safe to call before each test file / test case. */
 export async function resetDb() {
   await pool.query(
-    `TRUNCATE audit_log, access_grants, access_requests, visit_notes, tasks, treatment_plans, users
+    `TRUNCATE audit_log, symptom_checks, access_grants, access_requests,
+              visit_notes, tasks, treatment_plans, users
      RESTART IDENTITY CASCADE`,
   );
 }

@@ -8,6 +8,7 @@ import ProgressBar from '../components/ProgressBar.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { formatDueDate } from '../lib/format.js';
 import VisitNotesPanel from '../components/VisitNotesPanel.jsx';
+import SymptomCheckList from '../components/SymptomCheckList.jsx';
 
 export default function PlanDetail() {
   const { id } = useParams();
@@ -213,6 +214,13 @@ export default function PlanDetail() {
         patientId={plan.patient.id}
         canRecord={isOwnerDoctor}
       />
+
+      {isDoctor && (
+        <>
+          <h2 style={{ marginTop: 32 }}>Symptom checks</h2>
+          <SymptomCheckList patientId={plan.patient.id} />
+        </>
+      )}
     </div>
   );
 }

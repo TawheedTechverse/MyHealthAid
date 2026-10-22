@@ -9,6 +9,7 @@ import Profile from './pages/Profile.jsx';
 import RequestAccess from './pages/RequestAccess.jsx';
 import AccessGrants from './pages/AccessGrants.jsx';
 import AuditLog from './pages/AuditLog.jsx';
+import CheckSymptom from './pages/CheckSymptom.jsx';
 
 export default function App() {
   return (
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <ProtectedRoute role="patient">
               <AuditLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/symptoms"
+          element={
+            <ProtectedRoute role="patient">
+              <CheckSymptom />
             </ProtectedRoute>
           }
         />

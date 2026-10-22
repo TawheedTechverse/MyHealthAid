@@ -28,6 +28,17 @@ path. A real send failure is retried up to 3 times and shown to the doctor
 (with a manual retry button); it never undoes the signature. Patients and
 the doctor can download the PDF from the visit note at any time.
 
+Patients can also run an AI **symptom checker**. Red-flag symptoms (chest
+pain, trouble breathing, stroke signs, heavy bleeding, thoughts of suicide
+or self-harm) are detected first and always escalate straight to "Call
+Triple Zero (000) or go to the nearest emergency department" (plus Lifeline
+13 11 14 for suicidal thoughts) — the AI is never called for these. For
+everything else, Gemini gets the patient's active plan and latest visit
+summary as context and returns a safety-first triage (never a diagnosis or
+prescription); invalid or missing output always falls back to "see-gp".
+Every check is saved so the treating doctor can see it on the patient's
+record.
+
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
@@ -164,6 +175,10 @@ access_grants(id, doctor_id -> users, patient_id -> users,
 audit_log(id, doctor_id -> users, patient_id -> users,
           record_type['plan'|'visit_note'|'access_grant'], record_id,
           action['view'|'grant'|'revoke'], created_at)
+
+symptom_checks(id, patient_id -> users, input, red_flag,
+               urgency['self-care'|'see-gp'|'urgent'], advice, reasons JSONB,
+               model, created_at)
 ```
 
 `audit_log` is append-only: there is no route to update or delete an entry.
@@ -209,6 +224,8 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | GET    | `/access/grants`      | patient  | Doctors with access to your records |
 | POST   | `/access/grants/:id/revoke` | patient | Revoke a doctor's access |
 | GET    | `/access/audit`       | patient  | Who viewed your plans/visit notes, and every grant/revoke, newest first |
+| POST   | `/symptom-checks`     | patient  | Check a symptom; red flags escalate without calling the AI |
+| GET    | `/symptom-checks?patientId=` | any | Patient: your own checks · Doctor: checks for patients you treat/have access to |
 
 ## Notes
 

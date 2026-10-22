@@ -127,3 +127,20 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_log_patient ON audit_log(patient_id, created_at DESC);
+
+-- AI symptom checker (lib/symptomChecker.js). A red-flag match never calls
+-- the AI; urgency is always one of the three values below, validated by the
+-- app layer even for the AI path (bad output falls back to 'see-gp').
+CREATE TABLE IF NOT EXISTS symptom_checks (
+  id         BIGSERIAL PRIMARY KEY,
+  patient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  input      TEXT NOT NULL,
+  red_flag   BOOLEAN NOT NULL DEFAULT false,
+  urgency    TEXT NOT NULL CHECK (urgency IN ('self-care', 'see-gp', 'urgent')),
+  advice     TEXT NOT NULL DEFAULT '',
+  reasons    JSONB NOT NULL DEFAULT '[]',
+  model      TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_symptom_checks_patient ON symptom_checks(patient_id, created_at DESC);
