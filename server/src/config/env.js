@@ -33,4 +33,10 @@ export const config = {
   // the key "set" (so the feature turns on) but invalid (so every call 401s).
   geminiApiKey: (process.env.GEMINI_API_KEY ?? '').trim(),
   summaryModel: (process.env.SUMMARY_MODEL ?? 'gemini-flash-latest').trim(),
+
+  // Patient-access verification codes (optional). Without these, the code is
+  // printed to the server console instead of texted to the patient.
+  twilioAccountSid: (process.env.TWILIO_ACCOUNT_SID ?? '').trim(),
+  twilioAuthToken: (process.env.TWILIO_AUTH_TOKEN ?? '').trim(),
+  twilioFromNumber: (process.env.TWILIO_FROM_NUMBER ?? '').trim(),
 };

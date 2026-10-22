@@ -1,5 +1,6 @@
 import { query } from '../db/pool.js';
 import { ApiError } from './ApiError.js';
+import { hasActiveGrant } from './access.js';
 
 /**
  * Shape a raw joined plan row (with task_total / task_done aggregates) into the
@@ -42,13 +43,26 @@ const PLAN_SELECT = `
 `;
 
 /**
- * List plans visible to a user. Doctors see plans they own; patients see plans
- * assigned to them.
+ * List plans visible to a user. Doctors see plans they own plus plans for any
+ * patient who has granted them 2FA access; patients see plans assigned to them.
  */
 export async function listPlansForUser(user) {
-  const column = user.role === 'doctor' ? 'p.doctor_id' : 'p.patient_id';
+  if (user.role !== 'doctor') {
+    const { rows } = await query(
+      `${PLAN_SELECT} WHERE p.patient_id = $1 ORDER BY p.status = 'active' DESC, p.updated_at DESC`,
+      [user.id],
+    );
+    return rows.map(serializePlanRow);
+  }
+
   const { rows } = await query(
-    `${PLAN_SELECT} WHERE ${column} = $1 ORDER BY p.status = 'active' DESC, p.updated_at DESC`,
+    `${PLAN_SELECT}
+      WHERE p.doctor_id = $1
+         OR p.patient_id IN (
+           SELECT patient_id FROM access_grants
+            WHERE doctor_id = $1 AND revoked_at IS NULL AND expires_at > now()
+         )
+      ORDER BY p.status = 'active' DESC, p.updated_at DESC`,
     [user.id],
   );
   return rows.map(serializePlanRow);
@@ -66,7 +80,8 @@ export async function getPlanForUser(planId, user) {
   const row = rows[0];
   const isParticipant =
     (user.role === 'doctor' && String(row.doctor_id) === String(user.id)) ||
-    (user.role === 'patient' && String(row.patient_id) === String(user.id));
+    (user.role === 'patient' && String(row.patient_id) === String(user.id)) ||
+    (user.role === 'doctor' && (await hasActiveGrant(user.id, row.patient_id)));
   if (!isParticipant) {
     throw ApiError.forbidden('You do not have access to this plan');
   }

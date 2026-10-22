@@ -20,7 +20,8 @@ export async function startServer() {
 /** Wipes every app table. Safe to call before each test file / test case. */
 export async function resetDb() {
   await pool.query(
-    `TRUNCATE visit_notes, tasks, treatment_plans, users RESTART IDENTITY CASCADE`,
+    `TRUNCATE access_grants, access_requests, visit_notes, tasks, treatment_plans, users
+     RESTART IDENTITY CASCADE`,
   );
 }
 
@@ -57,11 +58,13 @@ export function makeClient(baseURL) {
 /** Registers a user through the real API and returns `{ user, token }`. */
 export async function registerUser(client, overrides = {}) {
   const n = Math.random().toString(36).slice(2, 10);
+  const role = overrides.role ?? 'patient';
   const payload = {
     fullName: overrides.fullName ?? 'Test User',
     email: overrides.email ?? `${n}@test.dev`,
     password: overrides.password ?? 'password123',
-    role: overrides.role ?? 'patient',
+    role,
+    ...(role === 'patient' ? { phone: overrides.phone ?? '+61412345670' } : {}),
   };
   const res = await client.post('/auth/register', { body: payload });
   if (res.status !== 201) {

@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
 -- before a doctor can sign a visit note. Validated in the app layer.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS medical_registration_number TEXT;
 
+-- Patients: phone number, used to send a 2FA code when a new doctor requests
+-- access to their records (lib/access.js). Validated in the app layer.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
+
 CREATE TABLE IF NOT EXISTS treatment_plans (
   id          BIGSERIAL PRIMARY KEY,
   doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -69,3 +73,34 @@ ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_by BIGINT REFERENCES use
 ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_name TEXT;
 ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_registration_number TEXT;
 ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ;
+
+-- Patient-approved 2FA access for a doctor who doesn't already treat them.
+-- A request holds a hashed 6-digit code (never the code itself), expires in
+-- 10 minutes, and locks after 3 wrong attempts (lib/access.js).
+CREATE TABLE IF NOT EXISTS access_requests (
+  id          BIGSERIAL PRIMARY KEY,
+  doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  patient_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash   TEXT NOT NULL,
+  attempts    INTEGER NOT NULL DEFAULT 0,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_access_requests_pair ON access_requests(doctor_id, patient_id);
+
+-- A correct code grants the doctor 30 days of read-only access to the
+-- patient's plans and visit notes. One row per (doctor, patient) pair -
+-- verifying again just refreshes it; revoking just marks it.
+CREATE TABLE IF NOT EXISTS access_grants (
+  id          BIGSERIAL PRIMARY KEY,
+  doctor_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  patient_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  granted_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  revoked_at  TIMESTAMPTZ,
+  UNIQUE (doctor_id, patient_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_access_grants_patient ON access_grants(patient_id);

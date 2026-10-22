@@ -24,9 +24,14 @@ export default function DoctorDashboard() {
           <h1 className="page-title">Doctor dashboard</h1>
           <p className="page-sub">Track every patient&apos;s progress at a glance.</p>
         </div>
-        <Link to="/plans/new" className="btn btn-primary">
-          + New treatment plan
-        </Link>
+        <div className="row">
+          <Link to="/access/request" className="btn btn-ghost">
+            Request patient access
+          </Link>
+          <Link to="/plans/new" className="btn btn-primary">
+            + New treatment plan
+          </Link>
+        </div>
       </div>
 
       <div className="stat-row">

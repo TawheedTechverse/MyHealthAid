@@ -5,6 +5,7 @@ import planRoutes from './plans.routes.js';
 import taskRoutes from './tasks.routes.js';
 import visitNoteRoutes from './visitNotes.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import accessRoutes from './access.routes.js';
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use('/plans', planRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/visit-notes', visitNoteRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/access', accessRoutes);
 
 export default router;

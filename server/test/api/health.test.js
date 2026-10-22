@@ -17,6 +17,7 @@ test('GET /health responds ok, and auth/register + /auth/me round-trip', async (
         email: 'health@test.dev',
         password: 'password123',
         role: 'patient',
+        phone: '+61412340000',
       },
     });
     assert.equal(register.status, 201);

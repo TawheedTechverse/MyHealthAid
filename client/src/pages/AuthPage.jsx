@@ -14,6 +14,7 @@ export default function AuthPage({ mode }) {
     email: '',
     password: '',
     role: 'patient',
+    phone: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +34,7 @@ export default function AuthPage({ mode }) {
     setError('');
     setSubmitting(true);
     const payload = isRegister
-      ? form
+      ? { ...form, phone: form.role === 'patient' ? form.phone.trim() : undefined }
       : { email: form.email, password: form.password };
     const result = isRegister ? await register(payload) : await login(payload);
     setSubmitting(false);
@@ -117,6 +118,20 @@ export default function AuthPage({ mode }) {
                 <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
               </select>
+            </label>
+          )}
+
+          {isRegister && form.role === 'patient' && (
+            <label className="field">
+              <span>Phone number</span>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={update('phone')}
+                placeholder="e.g. +61412345678"
+                autoComplete="tel"
+                required
+              />
             </label>
           )}
 

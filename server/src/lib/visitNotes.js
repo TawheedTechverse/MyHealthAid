@@ -1,5 +1,6 @@
 import { query } from '../db/pool.js';
 import { ApiError } from './ApiError.js';
+import { hasActiveGrant } from './access.js';
 
 const NOTE_SELECT = `
   SELECT vn.*,
@@ -46,7 +47,8 @@ export function assertNoteEditable(row) {
 
 /**
  * List notes visible to a user, optionally filtered by patient and/or plan.
- * Doctors see notes they authored; patients see notes about themselves.
+ * Doctors see notes they authored plus notes for any patient who has granted
+ * them 2FA access; patients see notes about themselves.
  */
 export async function listVisitNotes(user, { patientId, planId } = {}) {
   const where = [];
@@ -54,7 +56,12 @@ export async function listVisitNotes(user, { patientId, planId } = {}) {
 
   if (user.role === 'doctor') {
     params.push(user.id);
-    where.push(`vn.doctor_id = $${params.length}`);
+    where.push(
+      `(vn.doctor_id = $${params.length} OR vn.patient_id IN (
+         SELECT patient_id FROM access_grants
+          WHERE doctor_id = $${params.length} AND revoked_at IS NULL AND expires_at > now()
+       ))`,
+    );
   } else {
     params.push(user.id);
     where.push(`vn.patient_id = $${params.length}`);
@@ -84,7 +91,8 @@ export async function getVisitNoteForUser(id, user) {
   const row = rows[0];
   const isParticipant =
     (user.role === 'doctor' && String(row.doctor_id) === String(user.id)) ||
-    (user.role === 'patient' && String(row.patient_id) === String(user.id));
+    (user.role === 'patient' && String(row.patient_id) === String(user.id)) ||
+    (user.role === 'doctor' && (await hasActiveGrant(user.id, row.patient_id)));
   if (!isParticipant) {
     throw ApiError.forbidden('You do not have access to this visit note');
   }

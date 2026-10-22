@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard.jsx';
 import CreatePlan from './pages/CreatePlan.jsx';
 import PlanDetail from './pages/PlanDetail.jsx';
 import Profile from './pages/Profile.jsx';
+import RequestAccess from './pages/RequestAccess.jsx';
+import AccessGrants from './pages/AccessGrants.jsx';
 
 export default function App() {
   return (
@@ -43,6 +45,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/access/request"
+          element={
+            <ProtectedRoute role="doctor">
+              <RequestAccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/access/grants"
+          element={
+            <ProtectedRoute role="patient">
+              <AccessGrants />
             </ProtectedRoute>
           }
         />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, errorMessage } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import VisitRecorder from './VisitRecorder.jsx';
 import VisitNoteCard from './VisitNoteCard.jsx';
 import Spinner from './Spinner.jsx';
@@ -15,6 +16,7 @@ import Spinner from './Spinner.jsx';
  * @param {boolean} props.canRecord      true for the doctor
  */
 export default function VisitNotesPanel({ planId, patientId, patientOptions, canRecord }) {
+  const { user } = useAuth();
   const [notes, setNotes] = useState(null);
   const [configured, setConfigured] = useState(false);
   const [error, setError] = useState('');
@@ -59,7 +61,7 @@ export default function VisitNotesPanel({ planId, patientId, patientOptions, can
           <VisitNoteCard
             key={note.id}
             note={note}
-            canEdit={canRecord}
+            canEdit={canRecord && String(note.doctor.id) === String(user.id)}
             summarizerConfigured={configured}
             onChange={(updated) =>
               setNotes((list) => list.map((n) => (n.id === updated.id ? updated : n)))

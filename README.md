@@ -12,6 +12,12 @@ reviews and edits instead of writing from memory. Once reviewed, a doctor can
 signature block (name, registration number, timestamp); unsigned notes are
 labelled "Draft – not verified" everywhere, including to the patient.
 
+A doctor who doesn't already treat a patient can request **2FA-verified read
+access**: the patient gets a 6-digit code by SMS (or in the server log if
+Twilio isn't configured), and a correct code unlocks 30 days of read-only
+access to that patient's plans and visit notes. Patients see and can revoke
+every grant on their "Doctor access" page.
+
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
@@ -136,11 +142,18 @@ visit_notes(id, doctor_id -> users, patient_id -> users,
             summary_error, summary_model,
             signed_by -> users NULL, signed_name, signed_registration_number, signed_at,
             created_at, updated_at)
+
+access_requests(id, doctor_id -> users, patient_id -> users, code_hash,
+                attempts, expires_at, consumed_at, created_at)
+
+access_grants(id, doctor_id -> users, patient_id -> users,
+              granted_at, expires_at, revoked_at)
 ```
 
 `users.medical_registration_number` is set by doctors in their profile (AHPRA-style:
 3 letters + 10 digits, e.g. `MED0001234567`) and is required before they can sign a
-note.
+note. `users.phone` is set by patients at sign-up and in their profile; it's used to
+send the 2FA access code.
 
 ## API
 
@@ -171,12 +184,20 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | DELETE | `/visit-notes/:id`    | owner doctor | Delete a note (blocked once signed)  |
 | POST   | `/visit-notes/:id/sign` | owner doctor | Password + reviewed summary required; stamps name, registration number, and time, then locks the note |
 | POST   | `/visit-notes/:id/unsign` | owner doctor | Password required; clears the signature and unlocks the note |
+| POST   | `/access/request`     | doctor   | Request access to a patient (by email/ID); sends a 6-digit code |
+| POST   | `/access/verify`      | doctor   | Submit the code; on success grants 30 days of read access |
+| GET    | `/access/grants`      | patient  | Doctors with access to your records |
+| POST   | `/access/grants/:id/revoke` | patient | Revoke a doctor's access |
 
 ## Notes
 
 - Passwords are hashed with bcrypt; tokens are stateless JWTs (`JWT_EXPIRES_IN`, default 7d).
 - Patients can only toggle a task's `status` — the API rejects any other field from a patient.
-- This is a first milestone: no messaging, file uploads, or audit log yet.
+- A doctor with 2FA-granted access can only read a patient's plans and visit
+  notes — not edit, sign, or delete them; only the original owner/author can.
+- Get Twilio credentials at [console.twilio.com](https://console.twilio.com) to send
+  real SMS access codes; without them the code is printed to the server log.
+- This is a first milestone: no messaging or file uploads yet.
 
 ## License
 

@@ -12,18 +12,22 @@ async function main() {
     const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
     await withTransaction(async (client) => {
-      await client.query('TRUNCATE tasks, treatment_plans, users RESTART IDENTITY CASCADE');
+      await client.query(
+        'TRUNCATE access_grants, access_requests, tasks, treatment_plans, users RESTART IDENTITY CASCADE',
+      );
 
       const { rows: users } = await client.query(
-        `INSERT INTO users (email, password_hash, full_name, role, medical_registration_number)
+        `INSERT INTO users (email, password_hash, full_name, role, medical_registration_number, phone)
          VALUES
-           ($1, $5, 'Dr. Alice Reyes', 'doctor', 'MED0001234567'),
-           ($2, $5, 'Ben Carter', 'patient', NULL),
-           ($3, $5, 'Chloe Nguyen', 'patient', NULL),
-           ($4, $5, 'David Okafor', 'patient', NULL)
-         RETURNING id, email, role`,
+           ($1, $6, 'Dr. Alice Reyes', 'doctor', 'MED0001234567', NULL),
+           ($2, $6, 'Dr. Priya Shah', 'doctor', 'MED0009876543', NULL),
+           ($3, $6, 'Ben Carter', 'patient', NULL, '+61412345671'),
+           ($4, $6, 'Chloe Nguyen', 'patient', NULL, '+61412345672'),
+           ($5, $6, 'David Okafor', 'patient', NULL, '+61412345673')
+         RETURNING id, email, role, full_name`,
         [
           'dr.reyes@myhealthaid.dev',
+          'dr.shah@myhealthaid.dev',
           'ben@myhealthaid.dev',
           'chloe@myhealthaid.dev',
           'david@myhealthaid.dev',
@@ -31,7 +35,8 @@ async function main() {
         ],
       );
 
-      const doctor = users.find((u) => u.role === 'doctor');
+      const doctor = users.find((u) => u.email === 'dr.reyes@myhealthaid.dev');
+      const secondDoctor = users.find((u) => u.email === 'dr.shah@myhealthaid.dev');
       const [ben, chloe, david] = users.filter((u) => u.role === 'patient');
 
       const plans = [
@@ -147,10 +152,19 @@ async function main() {
           );
         }
       }
+
+      // Demo of feature 3: Dr. Shah doesn't treat Ben directly, but has
+      // already verified a 2FA code and holds 30 days of read access.
+      await client.query(
+        `INSERT INTO access_grants (doctor_id, patient_id, granted_at, expires_at)
+         VALUES ($1, $2, now() - interval '1 day', now() + interval '29 days')`,
+        [secondDoctor.id, ben.id],
+      );
     });
 
     console.log('Seed complete. Demo accounts (password: %s):', DEMO_PASSWORD);
-    console.log('  doctor  -> dr.reyes@myhealthaid.dev');
+    console.log('  doctor  -> dr.reyes@myhealthaid.dev (owns the plans/notes below)');
+    console.log('  doctor  -> dr.shah@myhealthaid.dev (has granted read access to Ben)');
     console.log('  patient -> ben@myhealthaid.dev / chloe@myhealthaid.dev / david@myhealthaid.dev');
   } catch (err) {
     console.error('Seed failed:', err.message);

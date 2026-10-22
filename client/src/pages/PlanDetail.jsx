@@ -25,6 +25,7 @@ export default function PlanDetail() {
 
   const plan = data.plan;
   const isDoctor = user.role === 'doctor';
+  const isOwnerDoctor = isDoctor && String(plan.doctor.id) === String(user.id);
 
   function applyPlan(updated) {
     setData({ plan: updated });
@@ -117,7 +118,7 @@ export default function PlanDetail() {
         </div>
         <ProgressBar value={plan.progress} done={plan.taskDone} total={plan.taskTotal} />
 
-        {isDoctor && (
+        {isOwnerDoctor && (
           <div className="row" style={{ marginTop: 4 }}>
             {plan.status !== 'active' && (
               <button className="btn btn-ghost btn-sm" onClick={() => changeStatus('active')}>
@@ -156,7 +157,7 @@ export default function PlanDetail() {
               type="checkbox"
               className="task-check"
               checked={task.status === 'done'}
-              disabled={busyTaskId === task.id}
+              disabled={busyTaskId === task.id || (isDoctor && !isOwnerDoctor)}
               onChange={() => toggleTask(task)}
               aria-label={`Mark "${task.title}" ${task.status === 'done' ? 'incomplete' : 'complete'}`}
             />
@@ -165,7 +166,7 @@ export default function PlanDetail() {
               {task.description && <div className="task-meta">{task.description}</div>}
               <div className="task-meta">{formatDueDate(task.dueDate)}</div>
             </div>
-            {isDoctor && (
+            {isOwnerDoctor && (
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => deleteTask(task)}
@@ -178,7 +179,7 @@ export default function PlanDetail() {
         ))}
       </div>
 
-      {isDoctor && (
+      {isOwnerDoctor && (
         <form onSubmit={addTask} className="glass card stack" style={{ marginTop: 20 }}>
           <strong>Add a task</strong>
           <div className="row" style={{ gap: 12 }}>
@@ -210,7 +211,7 @@ export default function PlanDetail() {
       <VisitNotesPanel
         planId={plan.id}
         patientId={plan.patient.id}
-        canRecord={isDoctor}
+        canRecord={isOwnerDoctor}
       />
     </div>
   );
