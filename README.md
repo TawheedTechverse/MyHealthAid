@@ -21,6 +21,13 @@ plan or visit note, and every grant/revoke, is recorded in an append-only
 audit log the patient can see on a "Who viewed my records" page — no route
 can edit or delete it.
 
+Signing also generates a **PDF of the visit** (patient, date, summary
+sections, medications, signature block) and emails it to the patient via
+SMTP — or, without SMTP configured, saves it to `server/tmp` and logs the
+path. A real send failure is retried up to 3 times and shown to the doctor
+(with a manual retry button); it never undoes the signature. Patients and
+the doctor can download the PDF from the visit note at any time.
+
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism, red/white gradient theme) with a dark mode — toggle in the top-right of the header, defaults to the OS theme, remembered per device. Responsive down to phone width. Voice capture uses the browser `SpeechRecognition` API (Chrome/Edge).
 - **Backend:** Node + Express, PostgreSQL via `pg`, JWT auth, Zod validation. Visit-note summaries use the Gemini API (structured output via `generationConfig.responseSchema`).
 - **Layout:** npm workspaces monorepo — [`client/`](client) and [`server/`](server).
@@ -144,6 +151,8 @@ visit_notes(id, doctor_id -> users, patient_id -> users,
             summary JSONB, summary_status['none'|'pending'|'ready'|'error'],
             summary_error, summary_model,
             signed_by -> users NULL, signed_name, signed_registration_number, signed_at,
+            pdf_email_status['none'|'pending'|'sent'|'failed'], pdf_email_attempts,
+            pdf_email_error, pdf_saved_path,
             created_at, updated_at)
 
 access_requests(id, doctor_id -> users, patient_id -> users, code_hash,
@@ -193,6 +202,8 @@ All routes are under `/api`. Authenticated routes need `Authorization: Bearer <t
 | DELETE | `/visit-notes/:id`    | owner doctor | Delete a note (blocked once signed)  |
 | POST   | `/visit-notes/:id/sign` | owner doctor | Password + reviewed summary required; stamps name, registration number, and time, then locks the note |
 | POST   | `/visit-notes/:id/unsign` | owner doctor | Password required; clears the signature and unlocks the note |
+| GET    | `/visit-notes/:id/pdf` | participant | Download the signed visit as a PDF |
+| POST   | `/visit-notes/:id/pdf/retry` | owner doctor | Re-attempt generating/emailing the PDF |
 | POST   | `/access/request`     | doctor   | Request access to a patient (by email/ID); sends a 6-digit code |
 | POST   | `/access/verify`      | doctor   | Submit the code; on success grants 30 days of read access |
 | GET    | `/access/grants`      | patient  | Doctors with access to your records |

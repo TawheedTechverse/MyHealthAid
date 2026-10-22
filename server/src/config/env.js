@@ -39,4 +39,12 @@ export const config = {
   twilioAccountSid: (process.env.TWILIO_ACCOUNT_SID ?? '').trim(),
   twilioAuthToken: (process.env.TWILIO_AUTH_TOKEN ?? '').trim(),
   twilioFromNumber: (process.env.TWILIO_FROM_NUMBER ?? '').trim(),
+
+  // Emailing signed visit records as a PDF (optional). Without these, the
+  // PDF is saved to server/tmp and the path is logged instead.
+  smtpHost: (process.env.SMTP_HOST ?? '').trim(),
+  smtpPort: Number(process.env.SMTP_PORT ?? 587),
+  smtpUser: (process.env.SMTP_USER ?? '').trim(),
+  smtpPass: (process.env.SMTP_PASS ?? '').trim(),
+  smtpFrom: (process.env.SMTP_FROM ?? '').trim(),
 };

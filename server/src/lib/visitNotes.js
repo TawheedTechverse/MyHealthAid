@@ -33,6 +33,12 @@ export function serializeVisitNote(row) {
           signedAt: row.signed_at,
         }
       : null,
+    pdfEmail: {
+      status: row.pdf_email_status ?? 'none',
+      attempts: row.pdf_email_attempts ?? 0,
+      error: row.pdf_email_error ?? null,
+      savedLocally: Boolean(row.pdf_saved_path),
+    },
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

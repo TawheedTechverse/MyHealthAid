@@ -14,6 +14,8 @@ import {
   assertNoteEditable,
 } from '../lib/visitNotes.js';
 import { recordAudit } from '../lib/audit.js';
+import { deliverVisitPdf } from '../lib/visitPdfDelivery.js';
+import { generateVisitPdf } from '../lib/pdf.js';
 import {
   summarizeTranscript,
   isSummarizerConfigured,
@@ -265,8 +267,45 @@ router.post(
       [req.params.id, req.user.id, doctor.full_name, doctor.medical_registration_number],
     );
 
+    // A failed/slow email never undoes the signature above - it only
+    // affects pdf_email_*, which the doctor can see and retry.
+    await deliverVisitPdf(req.params.id);
+
     const row = await getVisitNoteForUser(req.params.id, req.user);
     res.json({ note: serializeVisitNote(row) });
+  }),
+);
+
+/** Re-attempts generating/emailing the PDF (e.g. after a failed send). */
+router.post(
+  '/:id/pdf/retry',
+  requireRole('doctor'),
+  validate(idParam, 'params'),
+  asyncHandler(async (req, res) => {
+    const note = await assertDoctorOwnsNote(req.params.id, req.user.id);
+    if (!note.signed_at) {
+      throw ApiError.badRequest('Only a signed note has a PDF to deliver');
+    }
+    await deliverVisitPdf(req.params.id);
+    const row = await getVisitNoteForUser(req.params.id, req.user);
+    res.json({ note: serializeVisitNote(row) });
+  }),
+);
+
+/** Streams a freshly-generated PDF of a signed note to any participant (doctor or patient). */
+router.get(
+  '/:id/pdf',
+  validate(idParam, 'params'),
+  asyncHandler(async (req, res) => {
+    const row = await getVisitNoteForUser(req.params.id, req.user);
+    const note = serializeVisitNote(row);
+    if (!note.signed) {
+      throw ApiError.badRequest('Only a signed note has a PDF');
+    }
+    const pdfBuffer = await generateVisitPdf(note);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="visit-note-${note.id}.pdf"`);
+    res.send(pdfBuffer);
   }),
 );
 

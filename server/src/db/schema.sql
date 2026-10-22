@@ -74,6 +74,14 @@ ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_name TEXT;
 ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_registration_number TEXT;
 ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ;
 
+-- PDF delivery: generated and emailed (or saved to server/tmp if SMTP isn't
+-- configured) when a doctor signs a note. See lib/visitPdfDelivery.js.
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS pdf_email_status TEXT NOT NULL DEFAULT 'none'
+  CHECK (pdf_email_status IN ('none', 'pending', 'sent', 'failed'));
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS pdf_email_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS pdf_email_error TEXT;
+ALTER TABLE visit_notes ADD COLUMN IF NOT EXISTS pdf_saved_path TEXT;
+
 -- Patient-approved 2FA access for a doctor who doesn't already treat them.
 -- A request holds a hashed 6-digit code (never the code itself), expires in
 -- 10 minutes, and locks after 3 wrong attempts (lib/access.js).

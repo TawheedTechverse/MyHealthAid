@@ -37,6 +37,39 @@ export default function VisitNoteCard({ note, canEdit, summarizerConfigured, onC
     setError('');
   }
 
+  async function downloadPdf() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api.get(`/visit-notes/${note.id}/pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `visit-note-${note.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retryEmail() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api.post(`/visit-notes/${note.id}/pdf/retry`);
+      onChange?.(res.data.note);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitSign() {
     if (!password) return;
     setBusy(true);
@@ -136,6 +169,30 @@ export default function VisitNoteCard({ note, canEdit, summarizerConfigured, onC
           <div>{note.signature.fullName}</div>
           <div className="muted" style={{ fontSize: '0.85rem' }}>
             {note.signature.registrationNumber} · {formatDateTime(note.signature.signedAt)}
+          </div>
+        </div>
+      )}
+
+      {locked && (
+        <div className="row between">
+          <span className="muted" style={{ fontSize: '0.85rem' }}>
+            {note.pdfEmail.status === 'sent' &&
+              (note.pdfEmail.savedLocally
+                ? 'PDF record saved on the server (no email configured).'
+                : 'PDF record emailed to the patient.')}
+            {note.pdfEmail.status === 'pending' && 'Sending the PDF record…'}
+            {note.pdfEmail.status === 'failed' &&
+              `Emailing the PDF record failed${note.pdfEmail.error ? `: ${note.pdfEmail.error}` : '.'}`}
+          </span>
+          <div className="row" style={{ gap: 8 }}>
+            {canEdit && note.pdfEmail.status === 'failed' && (
+              <button className="btn btn-ghost btn-sm" onClick={retryEmail} disabled={busy}>
+                Retry email
+              </button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={downloadPdf} disabled={busy}>
+              Download PDF
+            </button>
           </div>
         </div>
       )}
